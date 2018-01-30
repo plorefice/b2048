@@ -1,0 +1,8 @@
+[package]
+name = "b2048"
+version = "0.1.0"
+authors = ["Pietro Lorefice <pietro.lorefice@gmail.com>"]
+
+[dependencies]
+rand = "^0.3"
+nalgebra = "^0.13.1"
