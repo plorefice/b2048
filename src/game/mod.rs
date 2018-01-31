@@ -97,13 +97,29 @@ impl Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let n = self.board.size();
 
+        // Top border for top-most tiles
+        write!(f, "┌──────")?;
+        for _ in 1 .. n { write!(f, "┬──────")?; };
+        writeln!(f, "┐")?;
+
+        // Central frame
         for i in 0 .. n {
-            for _ in 0 .. n { write!(f, "+------")?; };                    writeln!(f, "+")?;
-            for _ in 0 .. n { write!(f, "|      ")?; };                    writeln!(f, "|")?;
-            for j in 0 .. n { write!(f, "| {:4} ", self.board[(i,j)])?; }; writeln!(f, "|")?;
-            for _ in 0 .. n { write!(f, "|      ")?; };                    writeln!(f, "|")?;
+            // Top border for inner tiles
+            if i != 0 {
+                write!(f, "├──────")?;
+                for _ in 1 .. n { write!(f, "┼──────")?; };
+                writeln!(f, "┤")?;
+            }
+
+            // Inner borders
+            for _ in 0 .. n { write!(f, "│      ")?; };                    writeln!(f, "│")?;
+            for j in 0 .. n { write!(f, "│ {:4} ", self.board[(i,j)])?; }; writeln!(f, "│")?;
+            for _ in 0 .. n { write!(f, "│      ")?; };                    writeln!(f, "│")?;
         }
 
-        for _ in 0 .. n { write!(f, "+------")?; }; writeln!(f, "+")
+        // Bottom border
+        write!(f, "└──────")?;
+        for _ in 1 .. n { write!(f, "┴──────")?; };
+        writeln!(f, "┘")
     }
 }
