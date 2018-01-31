@@ -1,5 +1,4 @@
 extern crate rand;
-extern crate nalgebra;
 
 mod game;
 use game::{Game, Direction, Error};
