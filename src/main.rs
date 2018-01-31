@@ -1,4 +1,5 @@
 extern crate rand;
+extern crate cursive;
 
 mod game;
 use game::{Game, Direction, Error};
@@ -8,7 +9,7 @@ use std::io::{self, Write};
 fn main() {
     let mut game = Game::new(4);
 
-    while !game.is_over() {
+    while !game.over() {
         let mut input = String::new();
 
         print!("\nScore: {}\n\n{}\n> ", game.score(), game);
@@ -16,15 +17,15 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
 
         let res = match input.trim() {
-            "u" | "U" => game.strafe(Direction::Up),
-            "d" | "D" => game.strafe(Direction::Down),
-            "l" | "L" => game.strafe(Direction::Left),
-            "r" | "R" => game.strafe(Direction::Right),
+            "u" | "U" => game.swipe(Direction::Up),
+            "d" | "D" => game.swipe(Direction::Down),
+            "l" | "L" => game.swipe(Direction::Left),
+            "r" | "R" => game.swipe(Direction::Right),
             _         => { eprintln!("\nInvalid input!"); Ok(()) },
         };
 
         match res {
-            Ok(_) | Err(Error::NoMoveOccurred) => continue,
+            Ok(_) | Err(Error::InvalidMove) => continue,
             Err(_) => break,
         };
     }

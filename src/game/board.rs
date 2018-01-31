@@ -1,14 +1,24 @@
 use std::fmt::{self, Display};
 use std::ops::{Index, IndexMut, Range};
 use std::iter::FromIterator;
+use std::result;
 
 use rand::{self, Rng};
 
+pub type Result<T> = result::Result<T, Error>;
+
 #[derive(Debug)]
-enum HBorder {
-    Top,
-    Inner,
-    Bottom,
+pub enum Error {
+    BoardFull,
+    InvalidMove,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right
 }
 
 #[derive(Debug)]
@@ -19,10 +29,14 @@ pub struct Board {
 
 impl Board {
     pub fn new(size: usize) -> Board {
-        Board {
+        let mut board = Board {
             tiles: vec![vec![0; 4]; 4],
             size
-        }
+        };
+
+        board.spawn_random().unwrap();
+
+        board
     }
 
     pub fn size(&self) -> usize {
@@ -33,7 +47,53 @@ impl Board {
         !self.tiles.iter().flat_map(|r| r).any(|&t| t == 0)
     }
 
-    pub fn spawn_random(&mut self) -> Option<(usize, usize)> {
+    pub fn swipe(&mut self, dir: Direction) -> Result<()> {
+        let mut moved = false;
+
+        for i in 0 .. self.size {
+            let s = match dir {
+                Direction::Up    => self.column_mut(i),
+                Direction::Down  => self.column_mut(i).reverse(),
+                Direction::Left  => self.row_mut(i),
+                Direction::Right => self.row_mut(i).reverse(),
+            };
+
+            moved |= Board::squash(s)
+        };
+
+        if !moved {
+            Err(Error::InvalidMove)
+        } else {
+            self.spawn_random()
+                .and(Some(()))
+                .ok_or(Error::BoardFull)
+        }
+    }
+
+    fn squash(mut s: SliceMut) -> bool {
+        let mut moved = false;
+
+        'outer: for i in 0 .. s.len() {
+            if s[i] == 0 {
+                continue 'outer;
+            }
+
+            'inner: for j in 0 .. i {
+                let obstacle_present = s[j+1 .. i].iter().any(|e| **e != 0);
+
+                if !obstacle_present && (s[j] == 0 || s[i] == s[j]) {
+                    moved = true;
+                    s[j] += s[i];
+                    s[i] = 0;
+                    break 'inner;
+                }
+            }
+        }
+
+        moved
+    }
+
+    fn spawn_random(&mut self) -> Option<(usize, usize)> {
         let idx = self.get_empty_tile()?;
         self[idx] = rand::thread_rng().gen_range(1, 3) * 2;
         Some(idx)
@@ -55,12 +115,41 @@ impl Board {
         }
     }
 
-    pub fn row_mut(&mut self, i: usize) -> SliceMut {
+    fn row_mut(&mut self, i: usize) -> SliceMut {
         self.tiles[i].iter_mut().collect::<SliceMut>()
     }
 
-    pub fn column_mut(&mut self, i: usize) -> SliceMut {
+    fn column_mut(&mut self, i: usize) -> SliceMut {
         self.tiles.iter_mut().map(|r| &mut r[i]).collect::<SliceMut>()
+    }
+}
+
+#[derive(Debug)]
+enum HBorder {
+    Top,
+    Inner,
+    Bottom,
+}
+
+impl Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for i in 0 .. self.size {
+            if i == 0 {
+                writeln!(f, "{}", self.fmt_horiz_border(HBorder::Top))?;
+            } else {
+                writeln!(f, "{}", self.fmt_horiz_border(HBorder::Inner))?;
+            }
+
+            writeln!(f, "{}", self.fmt_inner_row(i))?;
+        }
+
+        writeln!(f, "{}", self.fmt_horiz_border(HBorder::Bottom))
+    }
+}
+
+impl Board {
+    fn size_hint(&self) -> (usize, usize) {
+        (7 * self.size + 1, 4 * self.size + 1)
     }
 
     fn fmt_horiz_border(&self, level: HBorder) -> String {
@@ -100,22 +189,6 @@ impl Board {
         s.push_str("│");
 
         s
-    }
-}
-
-impl Display for Board {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for i in 0 .. self.size {
-            if i == 0 {
-                writeln!(f, "{}", self.fmt_horiz_border(HBorder::Top))?;
-            } else {
-                writeln!(f, "{}", self.fmt_horiz_border(HBorder::Inner))?;
-            }
-
-            writeln!(f, "{}", self.fmt_inner_row(i))?;
-        }
-
-        writeln!(f, "{}", self.fmt_horiz_border(HBorder::Bottom))
     }
 }
 

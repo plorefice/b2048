@@ -5,3 +5,4 @@ authors = ["Pietro Lorefice <pietro.lorefice@gmail.com>"]
 
 [dependencies]
 rand = "^0.3"
+cursive = "^0.7.5"
