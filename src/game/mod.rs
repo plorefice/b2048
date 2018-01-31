@@ -73,10 +73,14 @@ impl Game {
         let mut moved = false;
 
         'outer: for i in 0 .. s.len() {
+            if s[i] == 0 {
+                continue 'outer;
+            }
+
             'inner: for j in 0 .. i {
                 let obstacle_present = s[j+1 .. i].iter().any(|e| **e != 0);
 
-                if !obstacle_present && s[i] != 0 && (s[j] == 0 || s[i] == s[j]) {
+                if !obstacle_present && (s[j] == 0 || s[i] == s[j]) {
                     moved = true;
                     s[j] += s[i];
                     s[i] = 0;
