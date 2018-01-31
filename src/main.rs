@@ -30,5 +30,5 @@ fn main() {
         };
     }
 
-    println!("\nGame over! Your final score is: {}\n", game.score());
+    println!("\n{}\nGame over! Your final score is: {}\n", game, game.score());
 }

@@ -1,6 +1,5 @@
-use nalgebra::Matrix4;
-
-use rand::{self, Rng};
+mod board;
+use self::board::*;
 
 use std::fmt::{self, Display};
 use std::result;
@@ -13,7 +12,7 @@ pub enum Error {
     NoMoveOccurred,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Direction {
     Up,
     Down,
@@ -23,18 +22,18 @@ pub enum Direction {
 
 #[derive(Debug)]
 pub struct Game {
-    tiles: Matrix4<u32>,
+    board: Board,
     score: u32,
 }
 
 impl Game {
     pub fn new() -> Game {
         let mut game = Game {
-            tiles: Matrix4::zeros(),
+            board: Board::new(),
             score: 0,
         };
 
-        game.gen_random_tile().unwrap();
+        game.board.spawn_random().expect("spawn failed on board creation");
 
         game
     }
@@ -44,120 +43,49 @@ impl Game {
     }
 
     pub fn is_over(&self) -> bool {
-        !self.tiles.iter().any(|&v| v == 0)
+        self.board.is_full()
     }
 
     pub fn strafe(&mut self, d: Direction) -> Result<()> {
-        use Direction::*;
+        let mut moved = false;
 
-        let moves = match d {
-            d @ Up   | d @ Down  => (0..4).map(|i| self.vstrafe(i, d)).collect::<Vec<_>>(),
-            d @ Left | d @ Right => (0..4).map(|i| self.hstrafe(i, d)).collect::<Vec<_>>(),
+        for i in 0..4 {
+            let s = match d {
+                Direction::Up    => self.board.column_mut(i),
+                Direction::Down  => self.board.column_mut(i).reverse(),
+                Direction::Left  => self.board.row_mut(i),
+                Direction::Right => self.board.row_mut(i).reverse(),
+            };
+
+            moved |= Game::strafe_slice(s)
         };
 
-        if moves.iter().all(|m| !m) {
+        if !moved {
             Err(Error::NoMoveOccurred)
         } else {
-            self.gen_random_tile()
+            self.board.spawn_random()
+                .and(Some(()))
+                .ok_or(Error::NoMoreSpace)
         }
     }
 
-    fn vstrafe(&mut self, i: usize, d: Direction) -> bool {
-        let mut col = self.tiles.column_mut(i);
+    fn strafe_slice(mut s: SliceMut) -> bool {
         let mut moved = false;
 
-        let (start, end, step): (isize, isize, isize) =
-            match d {
-                Direction::Up   => (0, 4, 1),
-                Direction::Down => (3, -1, -1),
-                _ => unreachable!()
-            };
+        'outer: for i in 0..4 {
+            'inner: for j in 0..i {
+                let obstacle_present = s[j+1 .. i].iter().any(|e| **e != 0);
 
-        let mut i: isize = start;
-
-        'outer: while i != end {
-            let mut j: isize = start;
-
-            'inner: while j != i {
-                let obstacle = col.rows((j+step) as usize, ((i-j).abs()) as usize - 1)
-                    .iter().any(|&e| e != 0);
-
-                let a = i as usize;
-                let b = j as usize;
-
-                if !obstacle && col[a] != 0 && (col[b] == 0 || col[b] == col[a]) {
-                    col[b] += col[a];
-                    col[a] = 0;
+                if !obstacle_present && s[i] != 0 && (s[j] == 0 || s[i] == s[j]) {
                     moved = true;
+                    s[j] += s[i];
+                    s[i] = 0;
                     break 'inner;
                 }
-
-                j += step;
             }
-
-            i += step;
         }
 
         moved
-    }
-
-    fn hstrafe(&mut self, i: usize, d: Direction) -> bool {
-        let mut row = self.tiles.row_mut(i);
-        let mut moved = false;
-
-        let (start, end, step): (isize, isize, isize) =
-            match d {
-                Direction::Left  => (0, 4, 1),
-                Direction::Right => (3, -1, -1),
-                _ => unreachable!()
-            };
-
-        let mut i: isize = start;
-
-        'outer: while i != end {
-            let mut j: isize = start;
-
-            'inner: while j != i {
-                let obstacle = row.columns((j+step) as usize, ((i-j).abs()) as usize - 1)
-                    .iter().any(|&e| e != 0);
-
-                let a = i as usize;
-                let b = j as usize;
-
-                if !obstacle && row[a] != 0 && (row[b] == 0 || row[b] == row[a]) {
-                    row[b] += row[a];
-                    row[a] = 0;
-                    moved = true;
-                    break 'inner;
-                }
-
-                j += step;
-            }
-
-            i += step;
-        }
-
-        moved
-    }
-
-    fn get_empty_tile(&mut self) -> Result<&mut u32> {
-        if self.is_over() {
-            return Err(Error::NoMoreSpace);
-        }
-
-        loop {
-            let i = rand::thread_rng().gen_range(0, 16);
-
-            if self.tiles[(i / 4, i % 4)] == 0 {
-                return Ok(&mut self.tiles[(i / 4, i % 4)]);
-            }
-        }
-    }
-
-    fn gen_random_tile(&mut self) -> Result<()> {
-        let tile = self.get_empty_tile()?;
-        *tile = rand::thread_rng().gen_range(1, 3) * 2;
-        Ok(())
     }
 }
 
@@ -166,7 +94,7 @@ impl Display for Game {
         for i in 0..4 {
             for _ in 0..4 { write!(f, "+------")?; };                    writeln!(f, "+")?;
             for _ in 0..4 { write!(f, "|      ")?; };                    writeln!(f, "|")?;
-            for j in 0..4 { write!(f, "| {:4} ", self.tiles[(i,j)])?; }; writeln!(f, "|")?;
+            for j in 0..4 { write!(f, "| {:4} ", self.board[(i,j)])?; }; writeln!(f, "|")?;
             for _ in 0..4 { write!(f, "|      ")?; };                    writeln!(f, "|")?;
         }
 
