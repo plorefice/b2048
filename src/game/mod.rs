@@ -93,33 +93,70 @@ impl Game {
     }
 }
 
+#[derive(Debug)]
+enum HBorder {
+    Top,
+    Inner,
+    Bottom,
+}
+
 impl Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let n = self.board.size();
 
-        // Top border for top-most tiles
-        write!(f, "┌──────")?;
-        for _ in 1 .. n { write!(f, "┬──────")?; };
-        writeln!(f, "┐")?;
-
-        // Central frame
         for i in 0 .. n {
-            // Top border for inner tiles
-            if i != 0 {
-                write!(f, "├──────")?;
-                for _ in 1 .. n { write!(f, "┼──────")?; };
-                writeln!(f, "┤")?;
+            if i == 0 {
+                writeln!(f, "{}", self.fmt_horiz_border(HBorder::Top))?;
+            } else {
+                writeln!(f, "{}", self.fmt_horiz_border(HBorder::Inner))?;
             }
 
-            // Inner borders
-            for _ in 0 .. n { write!(f, "│      ")?; };                    writeln!(f, "│")?;
-            for j in 0 .. n { write!(f, "│ {:4} ", self.board[(i,j)])?; }; writeln!(f, "│")?;
-            for _ in 0 .. n { write!(f, "│      ")?; };                    writeln!(f, "│")?;
+            writeln!(f, "{}", self.fmt_inner_row(i))?;
         }
 
-        // Bottom border
-        write!(f, "└──────")?;
-        for _ in 1 .. n { write!(f, "┴──────")?; };
-        writeln!(f, "┘")
+        writeln!(f, "{}", self.fmt_horiz_border(HBorder::Bottom))
+    }
+}
+
+impl Game {
+    fn fmt_horiz_border(&self, level: HBorder) -> String {
+        let mut s = String::new();
+        let n = self.board.size();
+
+        let (lr, cr, rr) = match level {
+            HBorder::Top    => ('┌', '┬', '┐'),
+            HBorder::Inner  => ('├', '┼', '┤'),
+            HBorder::Bottom => ('└', '┴', '┘'),
+        };
+
+        s.push_str(&format!("{}──────", lr));
+        for _ in 1 .. n {
+            s.push_str(&format!("{}──────", cr));
+        };
+        s.push_str(&format!("{}", rr));
+
+        s
+    }
+
+    fn fmt_inner_row(&self, i: usize) -> String {
+        let mut s = String::new();
+        let n = self.board.size();
+
+        for _ in 0 .. n {
+            s.push_str("│      ");
+        };
+        s.push_str("│\n");
+
+        for j in 0 .. n {
+            s.push_str(&format!("│ {:^4} ", self.board[(i,j)]));
+        };
+        s.push_str("│\n");
+
+        for _ in 0 .. n {
+            s.push_str("│      ");
+        };
+        s.push_str("│");
+
+        s
     }
 }
