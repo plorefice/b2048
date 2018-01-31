@@ -1,7 +1,15 @@
+use std::fmt::{self, Display};
 use std::ops::{Index, IndexMut, Range};
 use std::iter::FromIterator;
 
 use rand::{self, Rng};
+
+#[derive(Debug)]
+enum HBorder {
+    Top,
+    Inner,
+    Bottom,
+}
 
 #[derive(Debug)]
 pub struct Board {
@@ -53,6 +61,61 @@ impl Board {
 
     pub fn column_mut(&mut self, i: usize) -> SliceMut {
         self.tiles.iter_mut().map(|r| &mut r[i]).collect::<SliceMut>()
+    }
+
+    fn fmt_horiz_border(&self, level: HBorder) -> String {
+        let mut s = String::new();
+
+        let (lr, cr, rr) = match level {
+            HBorder::Top    => ('┌', '┬', '┐'),
+            HBorder::Inner  => ('├', '┼', '┤'),
+            HBorder::Bottom => ('└', '┴', '┘'),
+        };
+
+        s.push_str(&format!("{}──────", lr));
+        for _ in 1 .. self.size {
+            s.push_str(&format!("{}──────", cr));
+        };
+        s.push_str(&format!("{}", rr));
+
+        s
+    }
+
+    fn fmt_inner_row(&self, i: usize) -> String {
+        let mut s = String::new();
+
+        for _ in 0 .. self.size {
+            s.push_str("│      ");
+        };
+        s.push_str("│\n");
+
+        for j in 0 .. self.size {
+            s.push_str(&format!("│ {:^4} ", self[(i,j)]));
+        };
+        s.push_str("│\n");
+
+        for _ in 0 .. self.size {
+            s.push_str("│      ");
+        };
+        s.push_str("│");
+
+        s
+    }
+}
+
+impl Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for i in 0 .. self.size {
+            if i == 0 {
+                writeln!(f, "{}", self.fmt_horiz_border(HBorder::Top))?;
+            } else {
+                writeln!(f, "{}", self.fmt_horiz_border(HBorder::Inner))?;
+            }
+
+            writeln!(f, "{}", self.fmt_inner_row(i))?;
+        }
+
+        writeln!(f, "{}", self.fmt_horiz_border(HBorder::Bottom))
     }
 }
 
