@@ -27,9 +27,9 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(n: usize) -> Game {
+    pub fn new(size: usize) -> Game {
         let mut game = Game {
-            board: Board::new(n),
+            board: Board::new(size),
             score: 0,
         };
 

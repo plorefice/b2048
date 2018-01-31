@@ -6,19 +6,19 @@ use rand::{self, Rng};
 #[derive(Debug)]
 pub struct Board {
     tiles: Vec<Vec<u32>>,
-    n: usize,
+    size: usize,
 }
 
 impl Board {
-    pub fn new(n: usize) -> Board {
+    pub fn new(size: usize) -> Board {
         Board {
             tiles: vec![vec![0; 4]; 4],
-            n
+            size
         }
     }
 
     pub fn size(&self) -> usize {
-        self.n
+        self.size
     }
 
     pub fn is_full(&self) -> bool {
@@ -32,15 +32,17 @@ impl Board {
     }
 
     fn get_empty_tile(&mut self) -> Option<(usize, usize)> {
+        let sz = self.size;
+
         if self.is_full() {
             return None;
         }
 
         loop {
-            let i = rand::thread_rng().gen_range(0, self.n * self.n);
+            let i = rand::thread_rng().gen_range(0, sz * sz);
 
-            if self[(i / self.n, i % self.n)] == 0 {
-                return Some((i / self.n, i % self.n));
+            if self[(i / sz, i % sz)] == 0 {
+                return Some((i / sz, i % sz));
             }
         }
     }
