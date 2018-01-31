@@ -5,14 +5,20 @@ use rand::{self, Rng};
 
 #[derive(Debug)]
 pub struct Board {
-    tiles: [[u32; 4]; 4],
+    tiles: Vec<Vec<u32>>,
+    n: usize,
 }
 
 impl Board {
-    pub fn new() -> Board {
+    pub fn new(n: usize) -> Board {
         Board {
-            tiles: [[0; 4]; 4],
+            tiles: vec![vec![0; 4]; 4],
+            n
         }
+    }
+
+    pub fn size(&self) -> usize {
+        self.n
     }
 
     pub fn is_full(&self) -> bool {
@@ -31,10 +37,10 @@ impl Board {
         }
 
         loop {
-            let i = rand::thread_rng().gen_range(0, 16);
+            let i = rand::thread_rng().gen_range(0, self.n * self.n);
 
-            if self[(i / 4, i % 4)] == 0 {
-                return Some((i / 4, i % 4));
+            if self[(i / self.n, i % self.n)] == 0 {
+                return Some((i / self.n, i % self.n));
             }
         }
     }
@@ -68,6 +74,10 @@ pub struct SliceMut<'a> {
 }
 
 impl<'a> SliceMut<'a> {
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
     pub fn reverse(mut self) -> SliceMut<'a> {
         self.data.reverse();
         self

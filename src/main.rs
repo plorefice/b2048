@@ -7,7 +7,7 @@ use game::{Game, Direction, Error};
 use std::io::{self, Write};
 
 fn main() {
-    let mut game = Game::new();
+    let mut game = Game::new(4);
 
     while !game.is_over() {
         let mut input = String::new();

@@ -27,9 +27,9 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new() -> Game {
+    pub fn new(n: usize) -> Game {
         let mut game = Game {
-            board: Board::new(),
+            board: Board::new(n),
             score: 0,
         };
 
@@ -49,7 +49,7 @@ impl Game {
     pub fn strafe(&mut self, d: Direction) -> Result<()> {
         let mut moved = false;
 
-        for i in 0..4 {
+        for i in 0 .. self.board.size() {
             let s = match d {
                 Direction::Up    => self.board.column_mut(i),
                 Direction::Down  => self.board.column_mut(i).reverse(),
@@ -57,7 +57,7 @@ impl Game {
                 Direction::Right => self.board.row_mut(i).reverse(),
             };
 
-            moved |= Game::strafe_slice(s)
+            moved |= Game::squash(s)
         };
 
         if !moved {
@@ -69,11 +69,11 @@ impl Game {
         }
     }
 
-    fn strafe_slice(mut s: SliceMut) -> bool {
+    fn squash(mut s: SliceMut) -> bool {
         let mut moved = false;
 
-        'outer: for i in 0..4 {
-            'inner: for j in 0..i {
+        'outer: for i in 0 .. s.len() {
+            'inner: for j in 0 .. i {
                 let obstacle_present = s[j+1 .. i].iter().any(|e| **e != 0);
 
                 if !obstacle_present && s[i] != 0 && (s[j] == 0 || s[i] == s[j]) {
@@ -91,13 +91,15 @@ impl Game {
 
 impl Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for i in 0..4 {
-            for _ in 0..4 { write!(f, "+------")?; };                    writeln!(f, "+")?;
-            for _ in 0..4 { write!(f, "|      ")?; };                    writeln!(f, "|")?;
-            for j in 0..4 { write!(f, "| {:4} ", self.board[(i,j)])?; }; writeln!(f, "|")?;
-            for _ in 0..4 { write!(f, "|      ")?; };                    writeln!(f, "|")?;
+        let n = self.board.size();
+
+        for i in 0 .. n {
+            for _ in 0 .. n { write!(f, "+------")?; };                    writeln!(f, "+")?;
+            for _ in 0 .. n { write!(f, "|      ")?; };                    writeln!(f, "|")?;
+            for j in 0 .. n { write!(f, "| {:4} ", self.board[(i,j)])?; }; writeln!(f, "|")?;
+            for _ in 0 .. n { write!(f, "|      ")?; };                    writeln!(f, "|")?;
         }
 
-        for _ in 0..4 { write!(f, "+------")?; }; writeln!(f, "+")
+        for _ in 0 .. n { write!(f, "+------")?; }; writeln!(f, "+")
     }
 }
