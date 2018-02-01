@@ -23,6 +23,7 @@ pub enum Direction {
 #[derive(Debug)]
 pub struct Board {
     tiles: Vec<Vec<u32>>,
+    score: u32,
     size: usize,
 }
 
@@ -30,6 +31,7 @@ impl Board {
     pub fn new(size: usize) -> Board {
         let mut board = Board {
             tiles: vec![vec![0; 4]; 4],
+            score: 0,
             size
         };
 
@@ -50,10 +52,8 @@ impl Board {
         self.tiles.iter().flat_map(|r| r)
     }
 
-    pub fn swipe(&mut self, dir: Direction) -> Result<()> {
-        let mut moved = false;
-
-        for i in 0 .. self.size {
+    pub fn swipe(&mut self, dir: Direction) -> Result<u32> {
+        let scores = (0 .. self.size).map(|i| {
             let s = match dir {
                 Direction::Up    => self.column_mut(i),
                 Direction::Down  => self.column_mut(i).reverse(),
@@ -61,21 +61,24 @@ impl Board {
                 Direction::Right => self.row_mut(i).reverse(),
             };
 
-            moved |= Board::squash(s)
-        };
+            Board::squash(s)
+        }).collect::<Vec<_>>();
 
+        let moved = scores.iter().any(|s| s.is_some());
+        let score = scores.iter().map(|s| s.unwrap_or(0)).sum();
 
         if !moved && !self.is_full() {
             Err(Error::InvalidMove)
         } else {
             self.spawn_random()
-                .and(Some(()))
+                .and(Some(score))
                 .ok_or(Error::BoardFull)
         }
     }
 
-    fn squash(mut s: SliceMut) -> bool {
+    fn squash(mut s: SliceMut) -> Option<u32> {
         let mut moved = false;
+        let mut score = 0;
 
         'outer: for i in 0 .. s.len() {
             if s[i] == 0 {
@@ -86,6 +89,7 @@ impl Board {
                 let obstacle_present = s[j+1 .. i].iter().any(|e| **e != 0);
 
                 if !obstacle_present && (s[j] == 0 || s[i] == s[j]) {
+                    score += s[j] * 2;
                     moved = true;
                     s[j] += s[i];
                     s[i] = 0;
@@ -94,7 +98,11 @@ impl Board {
             }
         }
 
-        moved
+        if moved {
+            Some(score)
+        } else {
+            None
+        }
     }
 
     fn spawn_random(&mut self) -> Option<(usize, usize)> {

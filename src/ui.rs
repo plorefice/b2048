@@ -9,19 +9,25 @@ use cursive::views::Dialog;
 use cursive::event::{Event, EventResult, Key};
 
 pub struct BoardView {
-    board: Board
+    board: Board,
+    score: u32,
 }
 
 impl BoardView {
     pub fn new(size: usize) -> Self {
         BoardView {
             board: Board::new(size),
+            score: 0,
         }
     }
 }
 
 impl View for BoardView {
     fn draw(&self, printer: &Printer) {
+        printer.print((0,0), &format!("Score: {}", self.score));
+
+        let printer = printer.offset((0,1), true);
+
         for (n, tile) in self.board.get_tiles().enumerate() {
             let i = (n % self.board.size()) * 7;
             let j = (n / self.board.size()) * 4;
@@ -65,15 +71,16 @@ impl View for BoardView {
         };
 
         match self.board.swipe(dir) {
+            Ok(score) => { self.score += score; EventResult::Consumed(None) }
             Err(Error::BoardFull) => EventResult::with_cb(|s| {
                 s.add_layer(Dialog::text("Game over!")
-                    .button("Ok", |s| s.pop_layer()));
+                    .button("Ok", |s| { s.pop_layer(); s.pop_layer(); }));
             }),
             _ => EventResult::Consumed(None),
         }
     }
 
     fn required_size(&mut self, _: Vec2) -> Vec2 {
-        Vec2 { x: 7 * self.board.size() + 1, y: 4 * self.board.size() + 1 }
+        Vec2 { x: 7 * self.board.size() + 1, y: 4 * self.board.size() + 2 }
     }
 }
