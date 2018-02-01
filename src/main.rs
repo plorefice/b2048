@@ -1,3 +1,5 @@
+#![feature(conservative_impl_trait)]
+
 extern crate rand;
 extern crate cursive;
 
