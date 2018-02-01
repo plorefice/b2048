@@ -39,10 +39,6 @@ impl Board {
         board
     }
 
-    pub fn size(&self) -> usize {
-        self.size
-    }
-
     pub fn is_full(&self) -> bool {
         !self.tiles.iter().flat_map(|r| r).any(|&t| t == 0)
     }
@@ -61,7 +57,8 @@ impl Board {
             moved |= Board::squash(s)
         };
 
-        if !moved {
+
+        if !moved && !self.is_full() {
             Err(Error::InvalidMove)
         } else {
             self.spawn_random()
@@ -148,7 +145,7 @@ impl Display for Board {
 }
 
 impl Board {
-    fn size_hint(&self) -> (usize, usize) {
+    pub fn size_hint(&self) -> (usize, usize) {
         (7 * self.size + 1, 4 * self.size + 1)
     }
 

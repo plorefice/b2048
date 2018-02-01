@@ -1,34 +1,45 @@
 extern crate rand;
 extern crate cursive;
 
-mod game;
-use game::{Game, Direction, Error};
+mod board;
+mod ui;
 
-use std::io::{self, Write};
+use cursive::Cursive;
+use cursive::views::{Button, Dialog, LinearLayout};
+
+use ui::BoardView;
 
 fn main() {
-    let mut game = Game::new(4);
+    let mut siv = Cursive::new();
 
-    while !game.over() {
-        let mut input = String::new();
+    siv.add_layer(
+        Dialog::new()
+            .title("b2048")
+            .padding((2, 2, 1, 1))
+            .content(
+                LinearLayout::vertical()
+                    .child(Button::new_raw("  New game   ", new_game))
+                    .child(Button::new_raw(" Best scores ", |s| {
+                        s.add_layer(Dialog::info("Not yet!").title("Scores"))
+                    }))
+                    .child(Button::new_raw("    Exit     ", |s| s.quit())),
+            ),
+    );
 
-        print!("\nScore: {}\n\n{}\n> ", game.score(), game);
-        io::stdout().flush().unwrap();
-        io::stdin().read_line(&mut input).unwrap();
+    siv.run();
+}
 
-        let res = match input.trim() {
-            "u" | "U" => game.swipe(Direction::Up),
-            "d" | "D" => game.swipe(Direction::Down),
-            "l" | "L" => game.swipe(Direction::Left),
-            "r" | "R" => game.swipe(Direction::Right),
-            _         => { eprintln!("\nInvalid input!"); Ok(()) },
-        };
-
-        match res {
-            Ok(_) | Err(Error::InvalidMove) => continue,
-            Err(_) => break,
-        };
-    }
-
-    println!("\n{}\nGame over! Your final score is: {}\n", game, game.score());
+fn new_game(siv: &mut Cursive) {
+    siv.add_layer(
+        Dialog::new()
+            .title("b2048")
+            .padding((2, 2, 1, 1))
+            .content(
+                LinearLayout::horizontal()
+                    .child(BoardView::new(4)),
+            )
+            .button("Quit game", |s| {
+                s.pop_layer();
+            }),
+    );
 }
